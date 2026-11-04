@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Un salon se lit seulement avec son code : personne ne peut lister tous les salons.
+    match /salons/{code} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create, update: if request.auth != null;
+
+      // Chaque joueur n'écrit que sa propre fiche ; tout le salon peut la lire.
+      match /players/{playerId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == playerId;
+      }
+
+      // Roue de roulette et table de blackjack partagées.
+      match /state/{doc} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // Profil privé (personnage, badges, record) : visible par son seul propriétaire.
+    match /data/users/{uid}/{rest=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
