@@ -1,10 +1,5 @@
 {
   "name": "le-zero",
   "compatibility_date": "2026-10-01",
-  "assets": {
-    "directory": "./public",
-    "not_found_handling": "single-page-application"
-  },
-  "workers_dev": true,
-  "preview_urls": true
+  "pages_build_output_dir": "./public"
 }
