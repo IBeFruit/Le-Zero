@@ -1203,8 +1203,7 @@ window.bj3dInit=function(){if(inited)return;inited=true;
       ctx.save();ctx.translate(512+r*K*Math.cos(a),r*K*Math.sin(a));ctx.rotate(a-Math.PI/2);ctx.fillText(ch,0,0);ctx.restore();});}
   function drawFelt(){const c=fC.getContext('2d');c.clearRect(0,0,1024,512);const gold=css('--line')||'#c9a35c';
     c.strokeStyle=gold;c.fillStyle=gold;c.globalAlpha=.85;
-    arcText(c,'LE BLACKJACK PAIE 3 CONTRE 2',1.0,22,96);
-    c.globalAlpha=.6;arcText(c,'ASSURANCE PAIE 2 CONTRE 1',1.22,15,62);
+    arcText(c,'LE BLACKJACK PAIE 3 CONTRE 2 · ASSURANCE 2 CONTRE 1',1.25,16,112);c.globalAlpha=.6;
     arcText(c,'LE CROUPIER TIRE JUSQU\'À 16 ET RESTE SUR 17',2.78,14,78);
     c.globalAlpha=.75;c.lineWidth=2;c.beginPath();c.arc(512,0,1.36*K,0.08*Math.PI,0.92*Math.PI);c.stroke();
     for(let i=0;i<5;i++){const a=-seatAng(i),x=512+1.62*K*Math.cos(a),y=1.62*K*Math.sin(a);
@@ -1316,16 +1315,17 @@ window.bj3dInit=function(){if(inited)return;inited=true;
   /* sync from game state */
   const labels=new Map();const labelBox=$('#bjLabels');
   let targets=[],reach=0,reachX=0,headY=0,dirty=true;
-  function anchor(i){return onArc(2.3,i);}
+  function anchor(i){return onArc(2.12,i);}
   function phiOf(p){return Math.atan2(p.x,p.z-CZ);}
   let lastReveal=false;
   bj3d.sync=function(st,real,cnt){if(!st)st={seats:[],dealer:[],reveal:false,phase:'betting',roundId:'none'};
     const want=new Map();
     const occ={};const key=(p,c)=>{const k=p+c;occ[k]=(occ[k]||0)+1;return `${st.roundId}|${p}|${c}|${occ[k]}`;};
-    st.dealer.forEach((c,i)=>{const n=st.dealer.length;want.set(key('D',c),{code:c,pos:new T.Vector3((i-(n-1)/2)*.56,TOP+.006+i*.002,CZ+.52),ry:0,up:i===0||st.reveal});});
+    st.dealer.forEach((c,i)=>{const n=st.dealer.length;want.set(key('D',c),{code:c,pos:new T.Vector3((i-(n-1)/2)*.56,TOP+.006+i*.002,CZ+.8),ry:0,up:i===0||st.reveal});});
     st.seats.forEach((se,s)=>{if(!se)return;const a=anchor(s),phi=phiOf(a),t=new T.Vector3(Math.cos(phi),0,-Math.sin(phi)),u=new T.Vector3(-Math.sin(phi),0,-Math.cos(phi));
-      se.hands.forEach((h,hi)=>{const off=(hi-(se.hands.length-1)/2)*.8;
-        h.c.forEach((c,j)=>{const p=a.clone().addScaledVector(t,off+j*.17-.1).addScaledVector(u,j*.11);p.y=TOP+.006+j*.009;
+      const step=se.hands.length>1?.17:.26;
+      se.hands.forEach((h,hi)=>{const off=(hi-(se.hands.length-1)/2)*.92;
+        h.c.forEach((c,j)=>{const p=a.clone().addScaledVector(t,off+(j-(h.c.length-1)/2)*step).addScaledVector(u,j*.06);p.y=TOP+.006+j*.009;
           want.set(key('S'+s,c),{code:c,pos:p,ry:phi+(h.dbl&&j===2?Math.PI/2:0),up:true});});});
       setBet(s,se.hands.length?se.hands.reduce((x,h)=>x+h.bet,0):se.bet);});
     for(let s=0;s<5;s++)if(!st.seats[s])setBet(s,0);
@@ -1350,12 +1350,12 @@ window.bj3dInit=function(){if(inited)return;inited=true;
     headY=st.turn?Math.max(-.7,Math.min(.7,Math.atan2(anchor(st.turn.s).x,anchor(st.turn.s).z+2.05))):0;
     /* labels */
     const items=[];
-    if(st.dealer.length){const v=st.reveal?BJ.hv(st.dealer):BJ.hv([st.dealer[0]]);items.push(['D',new T.Vector3(0,TOP+.05,CZ+.08),`Croupier · ${st.reveal&&BJ.dealerBJ(st)?'Blackjack':v.t>21?'Brûlé':v.t}`,false]);}
+    if(st.dealer.length){const v=st.reveal?BJ.hv(st.dealer):BJ.hv([st.dealer[0]]);items.push(['D',new T.Vector3((st.dealer.length-1)/2*.56+.72,TOP+.05,CZ+.58),`Croupier · ${st.reveal&&BJ.dealerBJ(st)?'Blackjack':v.t>21?'Brûlé':v.t}`,false]);}
     st.seats.forEach((se,s)=>{if(!se)return;const mine=se.uid===bjUid();const a=anchor(s);
       let txt=`<span class="lab-av">${avatarSVG(mine?PROFILE.av:(others[se.uid]&&others[se.uid].av))}</span>`+esc(se.nick||'Joueur');
       if(se.hands.length){txt+=' · '+se.hands.map(h=>{const v=BJ.hv(h.c);return BJ.isBJ(h)?'BJ':h.sur?'Abandon':v.t>21?'Brûlé':v.t;}).join(' / ');
         if(st.phase==='done'&&st.dealer.length){const p=BJ.payout(st,se);txt+=` <em class="${p.net>=0?'lastp':'lastm'}">${sgn(p.net)}</em>`;}}
-      items.push(['S'+s,new T.Vector3(a.x,TOP+.05,a.z+.25),txt,st.turn&&st.turn.s===s,mine]);});
+      const lp=onArc(2.8,s);items.push(['S'+s,new T.Vector3(lp.x,TOP+.05,lp.z),txt,st.turn&&st.turn.s===s,mine]);});
     const seen=new Set();
     items.forEach(([id,pos,html,turn,mine])=>{seen.add(id);let el=labels.get(id);if(!el){el=document.createElement('div');el.className='bjlabel';labelBox.appendChild(el);labels.set(id,el);}
       if(el.dataset.h!==html){el.innerHTML=html;el.dataset.h=html;}el.classList.toggle('turn',!!turn);el.classList.toggle('mine',!!mine);el._pos=pos;});
@@ -1533,7 +1533,7 @@ setInterval(()=>{const st=bjState();if(!st||bjBusy)return;
 
 /* HUD */
 const ACT_LABEL={hit:'Tirer',stand:'Rester',double:'Doubler',split:'Séparer',surrender:'Abandonner'};
-function bjTimerText(){const st=bjState(),el=$('#bjSub');if(!el||!st)return;
+function bjTimerText(){const st=bjState(),el=$('#bjSub');if(!el||!st)return;if(!pvIdle()){el.textContent='';return;}
   const left=st.deadline?Math.max(0,Math.ceil((st.deadline-Date.now())/1000)):null;
   let t='';
   if(st.phase==='betting')t=left!==null&&mode==='salon'?`Distribution dans ${left} s`:(mode==='salon'?'Posez vos mises':'Choisis ta mise');
